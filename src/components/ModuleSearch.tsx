@@ -1,6 +1,7 @@
 import * as React from "react";
 import ReactJson from "react-json-view";
 import { useRecoilState, useRecoilValue } from "recoil";
+
 import {
   isWithMissingModuleIdState,
   moduleByChunkIdAndIdState,
@@ -8,8 +9,9 @@ import {
   searchModulesByChunkIdState,
   selectedChunkIdWithDefaultState,
 } from "../data-model";
-import styles from "./ModuleSearch.module.css";
 import type { ReasonDetails } from "../data-model";
+
+import styles from "./ModuleSearch.module.css";
 
 export const ModuleSearch = React.memo(() => {
   const chunkId = useRecoilValue(selectedChunkIdWithDefaultState);

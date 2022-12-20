@@ -1,6 +1,5 @@
 import { get as idbGet, set as idbSet } from "idb-keyval";
 import { atom, DefaultValue, selector, selectorFamily } from "recoil";
-import { orderBy } from "../utils";
 import type { AtomEffect } from "recoil";
 import type {
   StatsChunk,
@@ -8,6 +7,8 @@ import type {
   StatsModule,
   StatsModuleReason,
 } from "webpack";
+
+import { orderBy } from "../utils";
 
 const localStorageEffect =
   <T>(key: string): AtomEffect<T> =>
