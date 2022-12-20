@@ -1,10 +1,10 @@
-import * as React from 'react';
-import { RecoilRoot } from 'recoil';
-import { ChunkSearch } from './components/ChunkSearch';
-import { ChunkSelector } from './components/ChunkSelector';
-import { ChunksViewer } from './components/ChunksViewer';
-import { FileInput } from './components/FileInput';
-import { ModuleSearch } from './components/ModuleSearch';
+import * as React from "react";
+import { RecoilRoot } from "recoil";
+import { ChunkSearch } from "./components/ChunkSearch";
+import { ChunkSelector } from "./components/ChunkSelector";
+import { ChunksViewer } from "./components/ChunksViewer";
+import { FileInput } from "./components/FileInput";
+import { ModuleSearch } from "./components/ModuleSearch";
 
 const isDev = false;
 function App() {

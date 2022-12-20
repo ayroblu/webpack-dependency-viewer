@@ -1,23 +1,23 @@
-import * as React from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { searchChunksState, selectedChunkIdState } from '../data-model';
+import * as React from "react";
+import { useRecoilValue, useSetRecoilState } from "recoil";
+import { searchChunksState, selectedChunkIdState } from "../data-model";
 
 export const ChunkSearch = () => {
   const [isFocused, setIsFocused] = React.useState(false);
-  const [searchText, setSearchText] = React.useState('');
+  const [searchText, setSearchText] = React.useState("");
   const chunks = useRecoilValue(searchChunksState(searchText));
 
   const setSearchTextChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setSearchText(e.target.value);
     },
-    []
+    [],
   );
   const clickHandler = React.useCallback(
     (e: React.MouseEvent<HTMLInputElement>) => {
       e.stopPropagation();
     },
-    []
+    [],
   );
   const setFocusHandler = React.useCallback(() => {
     setIsFocused(true);
@@ -29,9 +29,9 @@ export const ChunkSearch = () => {
     const func = () => {
       setIsFocused(false);
     };
-    document.addEventListener('click', func);
+    document.addEventListener("click", func);
     return () => {
-      document.removeEventListener('click', func);
+      document.removeEventListener("click", func);
     };
   }, []);
   return (
@@ -71,5 +71,5 @@ export const ChunkLink = React.memo(
         <button onClick={setSelectedChunkHandler}>{chunkId}</button>
       </div>
     );
-  }
+  },
 );

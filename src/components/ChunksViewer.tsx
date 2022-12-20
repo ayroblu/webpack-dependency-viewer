@@ -1,6 +1,6 @@
-import ReactJson from 'react-json-view';
-import { useRecoilValue } from 'recoil';
-import { topChunksState } from '../data-model';
+import ReactJson from "react-json-view";
+import { useRecoilValue } from "recoil";
+import { topChunksState } from "../data-model";
 
 export const ChunksViewer = () => {
   const chunks = useRecoilValue(topChunksState);
@@ -10,7 +10,7 @@ export const ChunksViewer = () => {
         <div key={chunk.id}>
           <ReactJson
             collapsed
-            name={`${chunk.id ?? '<unknown name>'}`}
+            name={`${chunk.id ?? "<unknown name>"}`}
             src={chunk}
             theme="monokai"
           />

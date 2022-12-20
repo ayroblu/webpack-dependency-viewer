@@ -1,15 +1,15 @@
-import * as React from 'react';
-import ReactJson from 'react-json-view';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import * as React from "react";
+import ReactJson from "react-json-view";
+import { useRecoilState, useRecoilValue } from "recoil";
 import {
   isWithMissingModuleIdState,
   moduleByChunkIdAndIdState,
   reasonsByModuleId,
   searchModulesByChunkIdState,
   selectedChunkIdWithDefaultState,
-} from '../data-model';
-import styles from './ModuleSearch.module.css';
-import type { ReasonDetails } from '../data-model';
+} from "../data-model";
+import styles from "./ModuleSearch.module.css";
+import type { ReasonDetails } from "../data-model";
 
 export const ModuleSearch = React.memo(() => {
   const chunkId = useRecoilValue(selectedChunkIdWithDefaultState);
@@ -20,16 +20,16 @@ type ContentProps = {
   chunkId: string;
 };
 const ModuleSearchContent = React.memo(({ chunkId }: ContentProps) => {
-  const [searchText, setSearchText] = React.useState('');
+  const [searchText, setSearchText] = React.useState("");
   const modules = useRecoilValue(
-    searchModulesByChunkIdState([chunkId, searchText])
+    searchModulesByChunkIdState([chunkId, searchText]),
   );
 
   const setSearchTextChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setSearchText(e.target.value);
     },
-    []
+    [],
   );
   return (
     <div>
@@ -54,7 +54,7 @@ const WithMissingModuleIdCheckbox = React.memo(() => {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setIsTrue(e.target.checked);
     },
-    [setIsTrue]
+    [setIsTrue],
   );
   return (
     <label>
@@ -70,7 +70,7 @@ type ModuleLinkProps = {
 };
 const ModuleLink = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
   const statsModule = useRecoilValue(
-    moduleByChunkIdAndIdState([chunkId, moduleId])
+    moduleByChunkIdAndIdState([chunkId, moduleId]),
   );
   const [isFocused, setIsFocused] = React.useState(false);
   const clickHandler = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
@@ -85,15 +85,15 @@ const ModuleLink = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
   return (
     <div>
       <div className={styles.name} onClick={clickHandler}>
-        <Triangle direction={isFocused ? 'down' : 'right'} />
-        {statsModule.nameForCondition ?? statsModule.identifier ?? '<unknown>'}
+        <Triangle direction={isFocused ? "down" : "right"} />
+        {statsModule.nameForCondition ?? statsModule.identifier ?? "<unknown>"}
         {button}
       </div>
       {isInspecting ? (
         <div onClick={stopPropHandler}>
           <ReactJson
             collapsed
-            name={`${statsModule.id ?? '<unknown id>'}`}
+            name={`${statsModule.id ?? "<unknown id>"}`}
             src={statsModule}
             theme="monokai"
           />
@@ -116,7 +116,7 @@ const useInspect = () => {
       e.stopPropagation();
       setIsInspecting((isInspecting) => !isInspecting);
     },
-    []
+    [],
   );
   const button = (
     <button className={styles.inspect} onClick={inspectHandler}>
@@ -164,11 +164,11 @@ const Reason = ({
   );
 };
 type TriangleProps = {
-  direction: 'down' | 'right';
+  direction: "down" | "right";
 };
 const Triangle = React.memo(({ direction }: TriangleProps) => {
   const classes = `${styles.triangle} ${
-    direction === 'right' ? styles.triangleRight : styles.triangleDown
+    direction === "right" ? styles.triangleRight : styles.triangleDown
   }`;
   return (
     <svg className={classes} viewBox="0 0 500 500">

@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { useSetRecoilState } from 'recoil';
-import { statsState } from '../data-model';
+import * as React from "react";
+import { useSetRecoilState } from "recoil";
+import { statsState } from "../data-model";
 
 export const FileInput = React.memo(() => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -20,7 +20,7 @@ export const FileInput = React.memo(() => {
     <label>
       Upload file:
       <input onChange={fileOnChange} ref={fileInputRef} type="file" />
-      {isLoading ? 'Loading...' : null}
+      {isLoading ? "Loading..." : null}
     </label>
   );
 });
@@ -32,11 +32,11 @@ function readFilePromise(file: File): Promise<string> {
 
   return new Promise((resolve, reject) => {
     reader.onload = function () {
-      if (typeof reader.result === 'string') {
+      if (typeof reader.result === "string") {
         resolve(reader.result);
       } else {
         reject(
-          new Error(`expected type string got type ${typeof reader.result}`)
+          new Error(`expected type string got type ${typeof reader.result}`),
         );
       }
     };

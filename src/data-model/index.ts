@@ -1,21 +1,21 @@
-import { get as idbGet, set as idbSet } from 'idb-keyval';
-import { atom, DefaultValue, selector, selectorFamily } from 'recoil';
-import { orderBy } from '../utils';
-import type { AtomEffect } from 'recoil';
+import { get as idbGet, set as idbSet } from "idb-keyval";
+import { atom, DefaultValue, selector, selectorFamily } from "recoil";
+import { orderBy } from "../utils";
+import type { AtomEffect } from "recoil";
 import type {
   StatsChunk,
   StatsCompilation,
   StatsModule,
   StatsModuleReason,
-} from 'webpack';
+} from "webpack";
 
 const localStorageEffect =
   <T>(key: string): AtomEffect<T> =>
   ({ onSet, setSelf }) => {
     setSelf(
       idbGet(key).then((savedValue) =>
-        savedValue ? JSON.parse(savedValue) : new DefaultValue()
-      )
+        savedValue ? JSON.parse(savedValue) : new DefaultValue(),
+      ),
     );
 
     onSet((newValue, _, isReset) => {
@@ -24,13 +24,13 @@ const localStorageEffect =
   };
 
 export const statsState = atom<StatsCompilation | void>({
-  key: 'chunksState',
+  key: "chunksState",
   default: undefined,
-  effects: [localStorageEffect('stats.json')],
+  effects: [localStorageEffect("stats.json")],
 });
 
 const chunksMapState = selector<Record<string, StatsChunk>>({
-  key: 'chunksMapState',
+  key: "chunksMapState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
@@ -44,7 +44,7 @@ const chunksMapState = selector<Record<string, StatsChunk>>({
 });
 
 export const chunksByIdState = selectorFamily<StatsChunk, string>({
-  key: 'chunksByIdState',
+  key: "chunksByIdState",
   get:
     (chunkId) =>
     ({ get }) => {
@@ -54,18 +54,18 @@ export const chunksByIdState = selectorFamily<StatsChunk, string>({
 });
 
 export const topChunksState = selector<StatsChunk[]>({
-  key: 'topChunksState',
+  key: "topChunksState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
     return chunks
       .filter(({ initial }) => initial)
-      .sort(orderBy([({ size }) => size], ['desc']));
+      .sort(orderBy([({ size }) => size], ["desc"]));
   },
 });
 
 export const selectedChunkState = atom<string | void>({
-  key: 'selectedChunkState',
+  key: "selectedChunkState",
   default: undefined,
 });
 
@@ -74,18 +74,18 @@ type SearchIndex = {
   valueId: string;
 };
 const chunksSearchIndexState = selector<SearchIndex[]>({
-  key: 'chunksSearchIndexState',
+  key: "chunksSearchIndexState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
     return chunks.map(({ id }) => ({
-      key: `${id ?? ''}`.toLowerCase(),
-      valueId: `${id ?? ''}`,
+      key: `${id ?? ""}`.toLowerCase(),
+      valueId: `${id ?? ""}`,
     }));
   },
 });
 export const searchChunksState = selectorFamily<string[], string>({
-  key: 'searchChunksState',
+  key: "searchChunksState",
   get:
     (searchTerm) =>
     ({ get }) => {
@@ -100,7 +100,7 @@ export const searchChunksState = selectorFamily<string[], string>({
 type ModuleDetails = { statsModule: StatsModule; chunks: string[] };
 type ModulesMap = Record<string, ModuleDetails>;
 export const modulesMapState = selector<ModulesMap>({
-  key: 'modulesMapState',
+  key: "modulesMapState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
@@ -121,7 +121,7 @@ export const modulesMapState = selector<ModulesMap>({
 });
 
 export const modulesByIdState = selectorFamily<ModuleDetails, string>({
-  key: 'modulesByIdState',
+  key: "modulesByIdState",
   get:
     (moduleId) =>
     ({ get }) => {
@@ -131,7 +131,7 @@ export const modulesByIdState = selectorFamily<ModuleDetails, string>({
 });
 
 const modulesSearchIndexState = selector<SearchIndex[]>({
-  key: 'modulesSearchIndexState',
+  key: "modulesSearchIndexState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
@@ -140,14 +140,14 @@ const modulesSearchIndexState = selector<SearchIndex[]>({
         modules
           ?.filter(({ id }) => id)
           .map(({ id, identifier, nameForCondition }) => ({
-            key: `${nameForCondition ?? identifier ?? ''}`.toLowerCase(),
-            valueId: `${id ?? ''}`,
-          })) ?? []
+            key: `${nameForCondition ?? identifier ?? ""}`.toLowerCase(),
+            valueId: `${id ?? ""}`,
+          })) ?? [],
     );
   },
 });
 export const searchModulesState = selectorFamily<string[], string>({
-  key: 'searchModulesState',
+  key: "searchModulesState",
   get:
     (searchTerm) =>
     ({ get }) => {
@@ -157,7 +157,7 @@ export const searchModulesState = selectorFamily<string[], string>({
         ...new Set(
           searchIndex
             .filter(({ key }) => key.includes(normalisedSearchTerm))
-            .map(({ valueId }) => valueId)
+            .map(({ valueId }) => valueId),
         ),
       ];
     },
@@ -166,7 +166,7 @@ export const modulesSearchIndexByChunkIdState = selectorFamily<
   SearchIndex[],
   string
 >({
-  key: 'modulesSearchIndexByChunkIdState',
+  key: "modulesSearchIndexByChunkIdState",
   get:
     (chunkId) =>
     ({ get }) => {
@@ -175,8 +175,8 @@ export const modulesSearchIndexByChunkIdState = selectorFamily<
         chunk.modules
           ?.filter(({ id }) => id)
           .map(({ id, identifier, nameForCondition }) => ({
-            key: `${nameForCondition ?? identifier ?? ''}`.toLowerCase(),
-            valueId: `${id ?? ''}`,
+            key: `${nameForCondition ?? identifier ?? ""}`.toLowerCase(),
+            valueId: `${id ?? ""}`,
           })) ?? []
       );
     },
@@ -185,7 +185,7 @@ export const searchModulesByChunkIdState = selectorFamily<
   string[],
   [string, string]
 >({
-  key: 'searchModulesByChunkIdState',
+  key: "searchModulesByChunkIdState",
   get:
     ([chunkId, searchTerm]) =>
     ({ get }) => {
@@ -195,7 +195,7 @@ export const searchModulesByChunkIdState = selectorFamily<
         ...new Set(
           searchIndex
             .filter(({ key }) => key.includes(normalisedSearchTerm))
-            .map(({ valueId }) => valueId)
+            .map(({ valueId }) => valueId),
         ),
       ];
     },
@@ -204,7 +204,7 @@ const modulesMapByChunkIdState = selectorFamily<
   Record<string, StatsModule>,
   string
 >({
-  key: 'modulesMapByChunkId',
+  key: "modulesMapByChunkId",
   get:
     (chunkId) =>
     ({ get }) => {
@@ -223,7 +223,7 @@ export const moduleByChunkIdAndIdState = selectorFamily<
   StatsModule | void,
   [string, string]
 >({
-  key: 'moduleByChunkIdAndIdState',
+  key: "moduleByChunkIdAndIdState",
   get:
     ([chunkId, moduleId]) =>
     ({ get }) => {
@@ -232,11 +232,11 @@ export const moduleByChunkIdAndIdState = selectorFamily<
     },
 });
 export const selectedChunkIdState = atom<string | void>({
-  key: 'selectedChunkIdState',
+  key: "selectedChunkIdState",
   default: undefined,
 });
 export const selectedChunkIdWithDefaultState = selector<string | void>({
-  key: 'selectedChunkIdWithDefaultState',
+  key: "selectedChunkIdWithDefaultState",
   get: ({ get }) => {
     const selectedChunkId = get(selectedChunkIdState);
     const getTopChunkId = () => {
@@ -255,7 +255,7 @@ export const reasonsByModuleId = selectorFamily<
   ReasonDetails[],
   [string, string]
 >({
-  key: 'reasonModuleIdsByModuleId',
+  key: "reasonModuleIdsByModuleId",
   get:
     ([chunkId, moduleId]) =>
     ({ get }) => {
@@ -286,11 +286,11 @@ export const reasonsByModuleId = selectorFamily<
         .filter(
           ({ moduleId }) =>
             (get(isWithMissingModuleIdState) && !moduleId) ||
-            (moduleId && get(moduleByChunkIdAndIdState([chunkId, moduleId])))
+            (moduleId && get(moduleByChunkIdAndIdState([chunkId, moduleId]))),
         );
     },
 });
 export const isWithMissingModuleIdState = atom<boolean>({
-  key: 'isWithMissingModuleIdState',
+  key: "isWithMissingModuleIdState",
   default: false,
 });
