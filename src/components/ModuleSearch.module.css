@@ -29,3 +29,6 @@
 .triangleDown {
   transform: rotate(180deg);
 }
+.reasonsCount {
+  margin-inline-start: 4px;
+}

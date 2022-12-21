@@ -3,7 +3,9 @@ import ReactJson from "react-json-view";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import {
+  filterLowWidthState,
   isWithMissingModuleIdState,
+  maxReasonsUpByModuleId,
   moduleByChunkIdAndIdState,
   reasonsByModuleId,
   searchModulesByChunkIdState,
@@ -43,6 +45,7 @@ const ModuleSearchContent = React.memo(({ chunkId }: ContentProps) => {
           value={searchText}
         />
         <WithMissingModuleIdCheckbox />
+        <FilterLowWidthCheckbox />
       </div>
       {modules.map((moduleId) => (
         <ModuleLink chunkId={chunkId} key={moduleId} moduleId={moduleId} />
@@ -61,6 +64,21 @@ const WithMissingModuleIdCheckbox = React.memo(() => {
   return (
     <label>
       With missing modules reasons
+      <input checked={isTrue} onChange={changeHandler} type="checkbox" />
+    </label>
+  );
+});
+const FilterLowWidthCheckbox = React.memo(() => {
+  const [isTrue, setIsTrue] = useRecoilState(filterLowWidthState);
+  const changeHandler = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setIsTrue(e.target.checked);
+    },
+    [setIsTrue],
+  );
+  return (
+    <label>
+      Filter low width reasons
       <input checked={isTrue} onChange={changeHandler} type="checkbox" />
     </label>
   );
@@ -90,6 +108,7 @@ const ModuleLink = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
         <Triangle direction={isFocused ? "down" : "right"} />
         {statsModule.nameForCondition ?? statsModule.identifier ?? "<unknown>"}
         {button}
+        <ReasonsCount chunkId={chunkId} moduleId={moduleId} />
       </div>
       {isInspecting ? (
         <div onClick={stopPropHandler}>
@@ -131,11 +150,33 @@ const useInspect = () => {
   };
 };
 
+const ReasonsCount = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
+  const reasons = useRecoilValue(reasonsByModuleId([chunkId, moduleId]));
+  const maxReasons = useRecoilValue(
+    maxReasonsUpByModuleId([chunkId, moduleId]),
+  );
+  return (
+    <>
+      <span
+        className={styles.reasonsCount}
+        title="Number of reasons (non recursive)"
+      >
+        r: {reasons.length}
+      </span>
+      |
+      <span
+        className={styles.reasonsCount}
+        title="Max reasons recursive up the heirarchy"
+      >
+        Max r: {maxReasons}
+      </span>
+    </>
+  );
+});
 const Reasons = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
   const reasons = useRecoilValue(reasonsByModuleId([chunkId, moduleId]));
-  const stopPropHandler = useStopPropHandler();
   return (
-    <ul onClick={stopPropHandler}>
+    <ul>
       {reasons.map((reason, i) => (
         <li key={i}>
           <Reason chunkId={chunkId} reason={reason} />

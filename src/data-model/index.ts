@@ -190,15 +190,26 @@ export const searchModulesByChunkIdState = selectorFamily<
   get:
     ([chunkId, searchTerm]) =>
     ({ get }) => {
+      const isFilterLowWidth = get(filterLowWidthState);
       const searchIndex = get(modulesSearchIndexByChunkIdState(chunkId));
       const normalisedSearchTerm = searchTerm.toLowerCase();
-      return [
+      const foundItems = [
         ...new Set(
           searchIndex
             .filter(({ key }) => key.includes(normalisedSearchTerm))
             .map(({ valueId }) => valueId),
         ),
       ];
+      if (isFilterLowWidth) {
+        return foundItems.filter(
+          (moduleId) => get(maxReasonsUpByModuleId([chunkId, moduleId])) <= 2,
+        );
+        // .filter((moduleId) =>
+        //   get(isCustomFilterInByModuleId([chunkId, moduleId])),
+        // );
+      } else {
+        return foundItems;
+      }
     },
 });
 const modulesMapByChunkIdState = selectorFamily<
@@ -256,7 +267,7 @@ export const reasonsByModuleId = selectorFamily<
   ReasonDetails[],
   [string, string]
 >({
-  key: "reasonModuleIdsByModuleId",
+  key: "reasonsByModuleId",
   get:
     ([chunkId, moduleId]) =>
     ({ get }) => {
@@ -293,5 +304,96 @@ export const reasonsByModuleId = selectorFamily<
 });
 export const isWithMissingModuleIdState = atom<boolean>({
   key: "isWithMissingModuleIdState",
+  default: false,
+});
+export const maxReasonsMapByChunkId = selectorFamily<
+  Record<string, number>,
+  string
+>({
+  key: "maxReasonsMapByChunkId",
+  get:
+    (chunkId) =>
+    ({ get }) => {
+      const chunk = get(chunksByIdState(chunkId));
+      const modules = chunk.modules ?? [];
+      const seenIds = new Set<string>();
+      const widthsByModuleId: Record<string, number> = {};
+
+      function getWidth(moduleId: string) {
+        if (widthsByModuleId[moduleId] !== undefined)
+          return widthsByModuleId[moduleId];
+        // seenIds.add(moduleId);
+        const reasons = get(reasonsByModuleId([chunkId, moduleId]));
+        const reasonModuleIds = [
+          ...new Set(
+            reasons
+              .map(({ moduleId }) => moduleId)
+              .filter((moduleId) => moduleId)
+              .map((moduleId) => `${moduleId}`)
+              .filter((moduleId) => !seenIds.has(moduleId)),
+          ),
+        ];
+        const result = Math.max(
+          reasonModuleIds.length,
+          ...reasonModuleIds.map((moduleId) => getWidth(moduleId)),
+        );
+        widthsByModuleId[moduleId] = result;
+        return result;
+      }
+      for (const m of modules) {
+        if (m.id === undefined) continue;
+        const moduleId = `${m.id}`;
+        getWidth(moduleId);
+      }
+      return widthsByModuleId;
+    },
+});
+export const maxReasonsUpByModuleId = selectorFamily<number, [string, string]>({
+  key: "maxReasonsUpByModuleId",
+  get:
+    ([chunkId, moduleId]) =>
+    ({ get }) => {
+      const maxReasonsMap = get(maxReasonsMapByChunkId(chunkId));
+      return maxReasonsMap[moduleId];
+    },
+});
+// const customFilterExclude = ["initializeHorizonWeb"];
+// export const isCustomFilterInByModuleId = selectorFamily<
+//   boolean,
+//   [string, string]
+// >({
+//   key: "isCustomFilterInByModuleId",
+//   get:
+//     ([chunkId, moduleId]) =>
+//     ({ get }) => {
+//       const seenIds = new Set([moduleId]);
+//       let moduleIds = [moduleId];
+//       while (moduleIds.length) {
+//         const nextModuleIds = [];
+//         for (const moduleId of moduleIds) {
+//           seenIds.add(moduleId);
+//           const reasons = get(reasonsByModuleId([chunkId, moduleId]));
+//           if (
+//             reasons.some(({ resolvedModule }) =>
+//               customFilterExclude.some((t) => resolvedModule.includes(t)),
+//             )
+//           ) {
+//             return false;
+//           }
+//           nextModuleIds.push(
+//             ...reasons
+//               .map(({ moduleId }) => moduleId)
+//               .filter((moduleId) => moduleId)
+//               .map((moduleId) => `${moduleId}`)
+//               .filter((moduleId) => !seenIds.has(moduleId)),
+//           );
+//         }
+//         moduleIds = [...new Set(nextModuleIds)];
+//       }
+//       return true;
+//     },
+// });
+export const filterLowWidthState = atom<boolean>({
+  key: "filterLowWidthState",
   default: false,
 });
