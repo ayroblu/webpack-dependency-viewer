@@ -324,13 +324,15 @@ export const maxReasonsMapByChunkId = selectorFamily<
           return widthsByModuleId[moduleId];
         // seenIds.add(moduleId);
         const reasons = get(reasonsByModuleId([chunkId, moduleId]));
+        if (seenIds.has(moduleId)) return reasons.length;
+        seenIds.add(moduleId); // cut off any cycles, we assume that we've traversed all the elements of the cycle, so not getting any new info
+
         const reasonModuleIds = [
           ...new Set(
             reasons
               .map(({ moduleId }) => moduleId)
               .filter((moduleId) => moduleId)
-              .map((moduleId) => `${moduleId}`)
-              .filter((moduleId) => !seenIds.has(moduleId)),
+              .map((moduleId) => `${moduleId}`),
           ),
         ];
         const result = Math.max(
