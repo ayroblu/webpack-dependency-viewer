@@ -394,23 +394,33 @@ export const filterLowWidthState = atom<boolean>({
   default: false,
 });
 
+export const isShowDuplicatesState = atom<boolean>({
+  key: "isShowDuplicatesState",
+  default: true,
+});
+
 // app -> chunks -> modules
 export const duplicateModulesState = selector({
   key: "duplicateModulesState",
   get: ({ get }) => {
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
-    const counts: { [id: string]: number } = {};
+    const containingModules: { [id: string]: string[] } = {};
     for (const chunk of chunks) {
       for (const m of chunk.modules ?? []) {
-        if (!(m.moduleIdentifier in counts)) counts[m.moduleIdentifier] = 0;
-        counts[m.moduleIdentifier] += 1;
+        if (!m.identifier) continue;
+        const id = m.identifier.replace(
+          /.*workspace\/web\/(?!node_modules)/g,
+          "",
+        );
+        if (!(id in containingModules)) containingModules[id] = [];
+        containingModules[id].push((chunk.id ?? "<unknown chunk>").toString());
       }
     }
-    const countsList = Object.entries(counts).sort(
-      orderBy([([key, count]) => count], ["desc"]),
+    const containingModulesList = Object.entries(containingModules).sort(
+      orderBy([([, containingModules]) => containingModules.length], ["desc"]),
     );
-    console.log(countsList);
-    return countsList;
+    console.log(containingModulesList);
+    return containingModulesList;
   },
 });

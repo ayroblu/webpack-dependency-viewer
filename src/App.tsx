@@ -1,51 +1,65 @@
 import * as React from "react";
-import { RecoilRoot } from "recoil";
+import { RecoilRoot, useRecoilState, useRecoilValue } from "recoil";
 
-import { ChunkSearch } from "./components/ChunkSearch";
 import { ChunkSelector } from "./components/ChunkSelector";
-import { ChunksViewer } from "./components/ChunksViewer";
+import { DuplicateModules } from "./components/DuplicateModules";
 import { FileInput } from "./components/FileInput";
 import { ModuleSearch } from "./components/ModuleSearch";
+import { isShowDuplicatesState } from "./data-model";
 
-const isDev = false;
 function App() {
   return (
     <RecoilRoot>
       <React.Suspense fallback={<div>Loading</div>}>
-        {isDev ? <Content /> : <Layout />}
+        <Layout />
       </React.Suspense>
     </RecoilRoot>
-  );
-}
-function Content() {
-  return (
-    <div>
-      <ul>
-        <li>
-          Import stats.json
-          <FileInput />
-        </li>
-        <li>
-          Traverse chunks
-          <ChunksViewer />
-        </li>
-        <ChunkSearch />
-        <li>Traverse modules inside a chunk</li>
-        <li>Bonus: Module references across chunks</li>
-        <li>Recoil?</li>
-        <li>Urls, save search?</li>
-      </ul>
-    </div>
   );
 }
 function Layout() {
   return (
     <div>
       <FileInput />
-      <ChunkSelector />
-      <ModuleSearch />
+      <Decision />
     </div>
   );
 }
+function Decision() {
+  const isDuplicates = useRecoilValue(isShowDuplicatesState);
+  return (
+    <div>
+      <DecisionCheckbox />
+      {isDuplicates ? (
+        <DuplicateModules />
+      ) : (
+        <>
+          <ChunkSelector />
+          <ModuleSearch />
+        </>
+      )}
+    </div>
+  );
+}
+const DecisionCheckbox = React.memo(() => {
+  const [isShowDuplicates, setIsShowDuplicates] = useRecoilState(
+    isShowDuplicatesState,
+  );
+  const changeHandler = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setIsShowDuplicates(e.target.checked);
+    },
+    [setIsShowDuplicates],
+  );
+  return (
+    <label>
+      Show duplicates modules in multiple chunks
+      <input
+        checked={isShowDuplicates}
+        onChange={changeHandler}
+        type="checkbox"
+      />
+    </label>
+  );
+});
 
 export default App;
