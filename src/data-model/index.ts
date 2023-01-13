@@ -44,7 +44,7 @@ const chunksMapState = selector<Record<string, StatsChunk>>({
   },
 });
 
-export const chunksByIdState = selectorFamily<StatsChunk, string>({
+const chunksByIdState = selectorFamily<StatsChunk, string>({
   key: "chunksByIdState",
   get:
     (chunkId) =>
@@ -65,10 +65,10 @@ export const topChunksState = selector<StatsChunk[]>({
   },
 });
 
-export const selectedChunkState = atom<string | void>({
-  key: "selectedChunkState",
-  default: undefined,
-});
+// export const selectedChunkState = atom<string | void>({
+//   key: "selectedChunkState",
+//   default: undefined,
+// });
 
 type SearchIndex = {
   key: string;
@@ -98,75 +98,72 @@ export const searchChunksState = selectorFamily<string[], string>({
     },
 });
 
-type ModuleDetails = { statsModule: StatsModule; chunks: string[] };
-type ModulesMap = Record<string, ModuleDetails>;
-export const modulesMapState = selector<ModulesMap>({
-  key: "modulesMapState",
-  get: ({ get }) => {
-    const stats = get(statsState);
-    const chunks = stats?.chunks ?? [];
-    return chunks.reduce<ModulesMap>((map, chunk) => {
-      if (chunk.id) {
-        for (const mod of chunk.modules ?? []) {
-          if (mod.id) {
-            if (!map[mod.id]) {
-              map[mod.id] = { statsModule: mod, chunks: [] };
-            }
-            map[mod.id].chunks.push(`${chunk.id}`);
-          }
-        }
-      }
-      return map;
-    }, {});
-  },
-});
+// type ModuleDetails = { statsModule: StatsModule; chunks: string[] };
+// type ModulesMap = Record<string, ModuleDetails>;
+// const modulesMapState = selector<ModulesMap>({
+//   key: "modulesMapState",
+//   get: ({ get }) => {
+//     const stats = get(statsState);
+//     const chunks = stats?.chunks ?? [];
+//     return chunks.reduce<ModulesMap>((map, chunk) => {
+//       if (chunk.id) {
+//         for (const mod of chunk.modules ?? []) {
+//           if (mod.id) {
+//             if (!map[mod.id]) {
+//               map[mod.id] = { statsModule: mod, chunks: [] };
+//             }
+//             map[mod.id].chunks.push(`${chunk.id}`);
+//           }
+//         }
+//       }
+//       return map;
+//     }, {});
+//   },
+// });
 
-export const modulesByIdState = selectorFamily<ModuleDetails, string>({
-  key: "modulesByIdState",
-  get:
-    (moduleId) =>
-    ({ get }) => {
-      const modulesMap = get(modulesMapState);
-      return modulesMap[moduleId];
-    },
-});
+// const modulesByIdState = selectorFamily<ModuleDetails, string>({
+//   key: "modulesByIdState",
+//   get:
+//     (moduleId) =>
+//     ({ get }) => {
+//       const modulesMap = get(modulesMapState);
+//       return modulesMap[moduleId];
+//     },
+// });
 
-const modulesSearchIndexState = selector<SearchIndex[]>({
-  key: "modulesSearchIndexState",
-  get: ({ get }) => {
-    const stats = get(statsState);
-    const chunks = stats?.chunks ?? [];
-    return chunks.flatMap(
-      ({ modules }) =>
-        modules
-          ?.filter(({ id }) => id)
-          .map(({ id, identifier, nameForCondition }) => ({
-            key: `${nameForCondition ?? identifier ?? ""}`.toLowerCase(),
-            valueId: `${id ?? ""}`,
-          })) ?? [],
-    );
-  },
-});
-export const searchModulesState = selectorFamily<string[], string>({
-  key: "searchModulesState",
-  get:
-    (searchTerm) =>
-    ({ get }) => {
-      const searchIndex = get(modulesSearchIndexState);
-      const normalisedSearchTerm = searchTerm.toLowerCase();
-      return [
-        ...new Set(
-          searchIndex
-            .filter(({ key }) => key.includes(normalisedSearchTerm))
-            .map(({ valueId }) => valueId),
-        ),
-      ];
-    },
-});
-export const modulesSearchIndexByChunkIdState = selectorFamily<
-  SearchIndex[],
-  string
->({
+// const modulesSearchIndexState = selector<SearchIndex[]>({
+//   key: "modulesSearchIndexState",
+//   get: ({ get }) => {
+//     const stats = get(statsState);
+//     const chunks = stats?.chunks ?? [];
+//     return chunks.flatMap(
+//       ({ modules }) =>
+//         modules
+//           ?.filter(({ id }) => id)
+//           .map(({ id, identifier, nameForCondition }) => ({
+//             key: `${nameForCondition ?? identifier ?? ""}`.toLowerCase(),
+//             valueId: `${id ?? ""}`,
+//           })) ?? [],
+//     );
+//   },
+// });
+// const searchModulesState = selectorFamily<string[], string>({
+//   key: "searchModulesState",
+//   get:
+//     (searchTerm) =>
+//     ({ get }) => {
+//       const searchIndex = get(modulesSearchIndexState);
+//       const normalisedSearchTerm = searchTerm.toLowerCase();
+//       return [
+//         ...new Set(
+//           searchIndex
+//             .filter(({ key }) => key.includes(normalisedSearchTerm))
+//             .map(({ valueId }) => valueId),
+//         ),
+//       ];
+//     },
+// });
+const modulesSearchIndexByChunkIdState = selectorFamily<SearchIndex[], string>({
   key: "modulesSearchIndexByChunkIdState",
   get:
     (chunkId) =>
@@ -306,10 +303,7 @@ export const isWithMissingModuleIdState = atom<boolean>({
   key: "isWithMissingModuleIdState",
   default: false,
 });
-export const maxReasonsMapByChunkId = selectorFamily<
-  Record<string, number>,
-  string
->({
+const maxReasonsMapByChunkId = selectorFamily<Record<string, number>, string>({
   key: "maxReasonsMapByChunkId",
   get:
     (chunkId) =>
@@ -398,4 +392,25 @@ export const maxReasonsUpByModuleId = selectorFamily<number, [string, string]>({
 export const filterLowWidthState = atom<boolean>({
   key: "filterLowWidthState",
   default: false,
+});
+
+// app -> chunks -> modules
+export const duplicateModulesState = selector({
+  key: "duplicateModulesState",
+  get: ({ get }) => {
+    const stats = get(statsState);
+    const chunks = stats?.chunks ?? [];
+    const counts: { [id: string]: number } = {};
+    for (const chunk of chunks) {
+      for (const m of chunk.modules ?? []) {
+        if (!(m.moduleIdentifier in counts)) counts[m.moduleIdentifier] = 0;
+        counts[m.moduleIdentifier] += 1;
+      }
+    }
+    const countsList = Object.entries(counts).sort(
+      orderBy([([key, count]) => count], ["desc"]),
+    );
+    console.log(countsList);
+    return countsList;
+  },
 });
