@@ -406,18 +406,46 @@ export const duplicateModulesState = selector({
     const stats = get(statsState);
     const chunks = stats?.chunks ?? [];
     const containingModules: { [id: string]: string[] } = {};
+    const bytesByModuleId: { [id: string]: number } = {};
     for (const chunk of chunks) {
       for (const m of chunk.modules ?? []) {
         if (!m.identifier) continue;
         const id = m.identifier.replace(/.*workspace\/web\//g, "");
         if (!(id in containingModules)) containingModules[id] = [];
         containingModules[id].push((chunk.id ?? "<unknown chunk>").toString());
+        if (bytesByModuleId[id]) {
+          if (bytesByModuleId[id] !== m.size) {
+            console.log("wrong", id, m.size, bytesByModuleId[id]);
+          }
+        } else {
+          if (m.size) {
+            if (!Number.isInteger(m.size)) {
+              console.log("fraction", id, m.size);
+            }
+            bytesByModuleId[id] = m.size;
+          }
+        }
       }
     }
     const containingModulesList = Object.entries(containingModules).sort(
       orderBy([([, containingModules]) => containingModules.length], ["desc"]),
     );
-    console.log(containingModulesList);
+    const totalDuplicatedBytes = containingModulesList.reduce(
+      (total, [id, containingModules]) =>
+        total + (bytesByModuleId[id] ?? 0) * (containingModules.length - 1),
+      0,
+    );
+    const totalBytes = containingModulesList.reduce(
+      (total, [id, containingModules]) =>
+        total + (bytesByModuleId[id] ?? 0) * containingModules.length,
+      0,
+    );
+    console.log(
+      "duplicated bytes",
+      totalDuplicatedBytes.toLocaleString(),
+      "out of",
+      totalBytes.toLocaleString(),
+    );
     return containingModulesList;
   },
 });
