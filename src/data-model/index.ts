@@ -409,10 +409,7 @@ export const duplicateModulesState = selector({
     for (const chunk of chunks) {
       for (const m of chunk.modules ?? []) {
         if (!m.identifier) continue;
-        const id = m.identifier.replace(
-          /.*workspace\/web\/(?!node_modules)/g,
-          "",
-        );
+        const id = m.identifier.replace(/.*workspace\/web\//g, "");
         if (!(id in containingModules)) containingModules[id] = [];
         containingModules[id].push((chunk.id ?? "<unknown chunk>").toString());
       }
