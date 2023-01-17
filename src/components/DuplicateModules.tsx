@@ -32,13 +32,15 @@ function DuplicateModule({
 }) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   return (
-    <li onClick={() => setIsExpanded((v) => !v)}>
-      {id}:{" "}
-      {isExpanded
-        ? chunks.join(", ")
-        : `in: ${
-            chunks.length
-          } chunks, totaling ${duplicateBytes.toLocaleString()} duplicated bytes`}
+    <li>
+      <span onClick={() => setIsExpanded((v) => !v)}>
+        {id}:{" "}
+        {isExpanded
+          ? chunks.join(", ")
+          : `in: ${
+              chunks.length
+            } chunks, totaling ${duplicateBytes.toLocaleString()} duplicated bytes`}
+      </span>
     </li>
   );
 }
