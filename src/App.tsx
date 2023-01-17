@@ -5,7 +5,10 @@ import { ChunkSelector } from "./components/ChunkSelector";
 import { DuplicateModules } from "./components/DuplicateModules";
 import { FileInput } from "./components/FileInput";
 import { ModuleSearch } from "./components/ModuleSearch";
-import { isShowDuplicatesState } from "./data-model";
+import {
+  duplicatesSortByBytesState,
+  isShowDuplicatesState,
+} from "./data-model";
 
 function App() {
   return (
@@ -30,7 +33,10 @@ function Decision() {
     <div>
       <DecisionCheckbox />
       {isDuplicates ? (
-        <DuplicateModules />
+        <>
+          <DuplicatesOrderCheckbox />
+          <DuplicateModules />
+        </>
       ) : (
         <>
           <ChunkSelector />
@@ -61,5 +67,37 @@ const DecisionCheckbox = React.memo(() => {
     </label>
   );
 });
+
+const DuplicatesOrderCheckbox = React.memo(() => {
+  const [, setIsBytesSort] = useRecoilState(duplicatesSortByBytesState);
+  return (
+    <Checkbox
+      label="Order duplicates by duplicated bytes size"
+      onChange={setIsBytesSort}
+    />
+  );
+});
+const Checkbox = React.memo(
+  ({
+    label,
+    onChange,
+  }: {
+    label: string;
+    onChange: (value: boolean) => void;
+  }) => {
+    const changeHandler = React.useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(e.target.checked);
+      },
+      [onChange],
+    );
+    return (
+      <label>
+        {label}
+        <input onChange={changeHandler} type="checkbox" />
+      </label>
+    );
+  },
+);
 
 export default App;

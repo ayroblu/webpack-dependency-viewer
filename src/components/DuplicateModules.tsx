@@ -7,17 +7,38 @@ export function DuplicateModules() {
   const duplicateModules = useRecoilValue(duplicateModulesState);
   return (
     <ul>
-      {duplicateModules.map(([key, chunks]) => (
-        <DuplicateModule chunks={chunks} id={key} key={key} />
+      {duplicateModules.map(([key, { bytes, duplicateBytes, names }]) => (
+        <DuplicateModule
+          bytes={bytes}
+          chunks={names}
+          duplicateBytes={duplicateBytes}
+          id={key}
+          key={key}
+        />
       ))}
     </ul>
   );
 }
-function DuplicateModule({ chunks, id }: { id: string; chunks: string[] }) {
+function DuplicateModule({
+  bytes,
+  chunks,
+  duplicateBytes,
+  id,
+}: {
+  id: string;
+  chunks: string[];
+  bytes: number;
+  duplicateBytes: number;
+}) {
   const [isExpanded, setIsExpanded] = React.useState(false);
   return (
     <li onClick={() => setIsExpanded((v) => !v)}>
-      {id}: {isExpanded ? chunks.join(", ") : chunks.length}
+      {id}:{" "}
+      {isExpanded
+        ? chunks.join(", ")
+        : `in: ${
+            chunks.length
+          } chunks, totaling ${duplicateBytes.toLocaleString()} duplicated bytes`}
     </li>
   );
 }

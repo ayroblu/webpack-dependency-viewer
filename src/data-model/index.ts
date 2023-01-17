@@ -399,11 +399,18 @@ export const isShowDuplicatesState = atom<boolean>({
   default: true,
 });
 
+export const duplicatesSortByBytesState = atom<boolean>({
+  key: "duplicatesSortByBytesState",
+  default: false,
+});
+
 // app -> chunks -> modules
 export const duplicateModulesState = selector({
   key: "duplicateModulesState",
   get: ({ get }) => {
     const stats = get(statsState);
+    console.log(stats);
+    const duplicatesSortByBytes = get(duplicatesSortByBytesState);
     const chunks = stats?.chunks ?? [];
     const containingModules: { [id: string]: string[] } = {};
     const bytesByModuleId: { [id: string]: number } = {};
@@ -411,6 +418,7 @@ export const duplicateModulesState = selector({
       for (const m of chunk.modules ?? []) {
         if (!m.identifier) continue;
         const id = m.identifier.replace(/.*workspace\/web\//g, "");
+        if (!id.endsWith(".js")) continue;
         if (!(id in containingModules)) containingModules[id] = [];
         containingModules[id].push((chunk.id ?? "<unknown chunk>").toString());
         if (bytesByModuleId[id]) {
@@ -427,8 +435,16 @@ export const duplicateModulesState = selector({
         }
       }
     }
-    const containingModulesList = Object.entries(containingModules).sort(
-      orderBy([([, containingModules]) => containingModules.length], ["desc"]),
+    const containingModulesList = Object.entries(containingModules);
+    console.log(
+      containingModulesList
+        .map(([id, containingModules]) => [
+          id,
+          bytesByModuleId[id] * (containingModules.length - 1),
+        ])
+        .sort(orderBy([([, bytes]) => bytes], ["desc"]))
+        .map(([id, num]) => `${id}: ${num.toLocaleString()}`)
+        .slice(0, 20),
     );
     const totalDuplicatedBytes = containingModulesList.reduce(
       (total, [id, containingModules]) =>
@@ -440,12 +456,33 @@ export const duplicateModulesState = selector({
         total + (bytesByModuleId[id] ?? 0) * containingModules.length,
       0,
     );
+    const containingModulesListOrdered = containingModulesList
+      .map(
+        ([id, names]) =>
+          [
+            id,
+            {
+              names,
+              bytes: bytesByModuleId[id] ?? 0,
+              duplicateBytes: (bytesByModuleId[id] ?? 0) * (names.length - 1),
+            },
+          ] as const,
+      )
+      .sort(
+        orderBy(
+          [
+            ([, { duplicateBytes, names }]) =>
+              !duplicatesSortByBytes ? names.length : duplicateBytes,
+          ],
+          ["desc"],
+        ),
+      );
     console.log(
       "duplicated bytes",
       totalDuplicatedBytes.toLocaleString(),
       "out of",
       totalBytes.toLocaleString(),
     );
-    return containingModulesList;
+    return containingModulesListOrdered;
   },
 });
