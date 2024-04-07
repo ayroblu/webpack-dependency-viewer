@@ -188,6 +188,7 @@ export const searchModulesByChunkIdState = selectorFamily<
     ([chunkId, searchTerm]) =>
     ({ get }) => {
       const isFilterLowWidth = get(filterLowWidthState);
+      const isSortByDependentSize = get(isSortByDependentSizeState);
       const searchIndex = get(modulesSearchIndexByChunkIdState(chunkId));
       const normalisedSearchTerm = searchTerm.toLowerCase();
       const foundItems = [
@@ -197,6 +198,14 @@ export const searchModulesByChunkIdState = selectorFamily<
             .map(({ valueId }) => valueId),
         ),
       ];
+      if (isSortByDependentSize) {
+        foundItems.sort(
+          orderBy(
+            [(moduleId) => get(dependentSizeByModuleId([chunkId, moduleId]))],
+            ["desc"],
+          ),
+        );
+      }
       if (isFilterLowWidth) {
         return foundItems.filter(
           (moduleId) => get(maxReasonsUpByModuleId([chunkId, moduleId])) <= 2,
@@ -303,6 +312,10 @@ export const isWithMissingModuleIdState = atom<boolean>({
   key: "isWithMissingModuleIdState",
   default: false,
 });
+export const isSortByDependentSizeState = atom<boolean>({
+  key: "isSortByDependentSizeState",
+  default: false,
+});
 const maxReasonsMapByChunkId = selectorFamily<Record<string, number>, string>({
   key: "maxReasonsMapByChunkId",
   get:
@@ -352,6 +365,153 @@ export const maxReasonsUpByModuleId = selectorFamily<number, [string, string]>({
       const maxReasonsMap = get(maxReasonsMapByChunkId(chunkId));
       return maxReasonsMap[moduleId];
     },
+});
+const dependentGraphMapByChunkId = selectorFamily<
+  Map<string, Set<string>>,
+  string
+>({
+  key: "dependentGraphMapByChunkId",
+  get:
+    (chunkId) =>
+    ({ get }) => {
+      const chunk = get(chunksByIdState(chunkId));
+      const modules = chunk.modules ?? [];
+      const seenIds = new Set<string>();
+
+      const graph = new Map<string, Set<string>>();
+      function buildGraph(moduleId: string) {
+        if (seenIds.has(moduleId)) return;
+        seenIds.add(moduleId);
+        const reasons = get(reasonsByModuleId([chunkId, moduleId]));
+
+        const reasonModuleIds = [
+          ...new Set(
+            reasons
+              .map(({ moduleId }) => moduleId)
+              .filter((moduleId) => moduleId)
+              .map((moduleId) => `${moduleId}`),
+          ),
+        ];
+        for (const reasonModuleId of reasonModuleIds) {
+          const set =
+            graph.get(reasonModuleId) ??
+            (() => {
+              const newSet = new Set<string>();
+              graph.set(reasonModuleId, newSet);
+              return newSet;
+            })();
+          set.add(moduleId);
+        }
+      }
+      // Don't have "children", so reasons gives parents, build the graph, then traverse down
+      for (const m of modules) {
+        if (m.id === undefined) continue;
+        const moduleId = `${m.id}`;
+        buildGraph(moduleId);
+      }
+      return graph;
+    },
+});
+export const childrenByModuleId = selectorFamily<string[], [string, string]>({
+  key: "childrenByModuleId",
+  get:
+    ([chunkId, moduleId]) =>
+    ({ get }) => {
+      const graph = get(dependentGraphMapByChunkId(chunkId));
+      const isSort = get(isSortByDependentSizeState);
+      const children = [...(graph.get(moduleId) ?? new Set())];
+      if (isSort) {
+        children.sort(
+          orderBy(
+            [(moduleId) => get(dependentSizeByModuleId([chunkId, moduleId]))],
+            ["desc"],
+          ),
+        );
+      }
+      return children;
+    },
+});
+const dependentSizeMapByChunkId = selectorFamily<
+  Record<string, number>,
+  string
+>({
+  key: "dependentSizeMapByChunkId",
+  get:
+    (chunkId) =>
+    ({ get }) => {
+      const chunk = get(chunksByIdState(chunkId));
+      const modules = chunk.modules ?? [];
+
+      const root = modules[0]?.issuerPath?.[0].id;
+      if (!root) {
+        return {};
+      }
+      const graph = get(dependentGraphMapByChunkId(chunkId));
+
+      const seenIds = new Set<string>();
+      const dependentSizeByModuleId: Record<string, number> = {};
+      function getDependentSize(moduleId: string): number {
+        if (dependentSizeByModuleId[moduleId] !== undefined)
+          return dependentSizeByModuleId[moduleId];
+        // For a cycle, further imports are worth 0
+        if (seenIds.has(moduleId)) return 0;
+        seenIds.add(moduleId);
+        const statsModule = get(moduleByChunkIdAndIdState([chunkId, moduleId]));
+        const currentSize = statsModule?.size ?? 0;
+        const children = graph.get(moduleId) ?? new Set();
+        const childIds = [...children];
+
+        const result =
+          currentSize +
+          childIds.reduce(
+            (sum, moduleId) => sum + getDependentSize(moduleId),
+            0,
+          );
+        dependentSizeByModuleId[moduleId] = result;
+        return result;
+      }
+      getDependentSize(root.toString());
+      return dependentSizeByModuleId;
+    },
+});
+export const dependentSizeByModuleId = selectorFamily<number, [string, string]>(
+  {
+    key: "dependentSizeByModuleId",
+    get:
+      ([chunkId, moduleId]) =>
+      ({ get }) => {
+        // const dependentSizeMap = get(dependentSizeMapByChunkId(chunkId));
+        // return dependentSizeMap[moduleId] ?? 0;
+
+        const graph = get(dependentGraphMapByChunkId(chunkId));
+
+        const seenIds = new Set<string>();
+        function getDependentSize(moduleId: string): number {
+          // For a cycle, further imports are worth 0
+          if (seenIds.has(moduleId)) return 0;
+          seenIds.add(moduleId);
+          const statsModule = get(
+            moduleByChunkIdAndIdState([chunkId, moduleId]),
+          );
+          const currentSize = statsModule?.size ?? 0;
+          const children = graph.get(moduleId) ?? new Set();
+          const childIds = [...children];
+
+          const result =
+            currentSize +
+            childIds.reduce(
+              (sum, moduleId) => sum + getDependentSize(moduleId),
+              0,
+            );
+          return result;
+        }
+        return getDependentSize(moduleId);
+      },
+  },
+);
+export const isShowChildrenState = atom<boolean>({
+  key: "isShowChildrenState",
+  default: false,
 });
 // const customFilterExclude = ["initializeHorizonWeb"];
 // export const isCustomFilterInByModuleId = selectorFamily<

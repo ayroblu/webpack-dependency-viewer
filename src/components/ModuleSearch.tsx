@@ -3,7 +3,11 @@ import ReactJson from "react-json-view";
 import { useRecoilState, useRecoilValue } from "recoil";
 
 import {
+  childrenByModuleId,
+  dependentSizeByModuleId,
   filterLowWidthState,
+  isShowChildrenState,
+  isSortByDependentSizeState,
   isWithMissingModuleIdState,
   maxReasonsUpByModuleId,
   moduleByChunkIdAndIdState,
@@ -46,11 +50,44 @@ const ModuleSearchContent = React.memo(({ chunkId }: ContentProps) => {
         />
         <WithMissingModuleIdCheckbox />
         <FilterLowWidthCheckbox />
+        <SortByDependentSizeCheckbox />
+        <ShowChildrenCheckbox />
       </div>
       {modules.map((moduleId) => (
         <ModuleLink chunkId={chunkId} key={moduleId} moduleId={moduleId} />
       ))}
     </div>
+  );
+});
+const SortByDependentSizeCheckbox = React.memo(() => {
+  // Note that dependent size is not the same as size that would be removed if it was removed
+  const [isTrue, setIsTrue] = useRecoilState(isSortByDependentSizeState);
+  const changeHandler = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setIsTrue(e.target.checked);
+    },
+    [setIsTrue],
+  );
+  return (
+    <label>
+      Sort by dependent size
+      <input checked={isTrue} onChange={changeHandler} type="checkbox" />
+    </label>
+  );
+});
+const ShowChildrenCheckbox = React.memo(() => {
+  const [isTrue, setIsTrue] = useRecoilState(isShowChildrenState);
+  const changeHandler = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setIsTrue(e.target.checked);
+    },
+    [setIsTrue],
+  );
+  return (
+    <label>
+      Show children rather than parents
+      <input checked={isTrue} onChange={changeHandler} type="checkbox" />
+    </label>
   );
 });
 const WithMissingModuleIdCheckbox = React.memo(() => {
@@ -92,6 +129,7 @@ const ModuleLink = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
   const statsModule = useRecoilValue(
     moduleByChunkIdAndIdState([chunkId, moduleId]),
   );
+  const isShowChildren = useRecoilValue(isShowChildrenState);
   const [isFocused, setIsFocused] = React.useState(false);
   const clickHandler = React.useCallback((e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
@@ -120,7 +158,12 @@ const ModuleLink = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
           />
         </div>
       ) : null}
-      {isFocused && <Reasons chunkId={chunkId} moduleId={moduleId} />}
+      {isFocused &&
+        (isShowChildren ? (
+          <Children chunkId={chunkId} moduleId={moduleId} />
+        ) : (
+          <Reasons chunkId={chunkId} moduleId={moduleId} />
+        ))}
     </div>
   );
 });
@@ -155,6 +198,9 @@ const ReasonsCount = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
   const maxReasons = useRecoilValue(
     maxReasonsUpByModuleId([chunkId, moduleId]),
   );
+  const dependentSize = useRecoilValue(
+    dependentSizeByModuleId([chunkId, moduleId]),
+  );
   return (
     <>
       <span
@@ -169,6 +215,14 @@ const ReasonsCount = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
         title="Max reasons recursive up the heirarchy"
       >
         Max r: {maxReasons}
+      </span>
+      |
+      <span
+        className={styles.reasonsCount}
+        title="Size of all dependencies of module"
+      >
+        Dependent size:{" "}
+        {dependentSize.toLocaleString(undefined, { compactDisplay: "short" })}
       </span>
     </>
   );
@@ -217,5 +271,18 @@ const Triangle = React.memo(({ direction }: TriangleProps) => {
     <svg className={classes} viewBox="0 0 500 500">
       <polygon points="250,80 100,400 400,400" />
     </svg>
+  );
+});
+
+const Children = React.memo(({ chunkId, moduleId }: ModuleLinkProps) => {
+  const children = useRecoilValue(childrenByModuleId([chunkId, moduleId]));
+  return (
+    <ul>
+      {children.map((moduleId, i) => (
+        <li key={i}>
+          <ModuleLink chunkId={chunkId} moduleId={moduleId} />
+        </li>
+      ))}
+    </ul>
   );
 });
